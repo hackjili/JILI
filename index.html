@@ -33,9 +33,10 @@
 <!-- Hidden Content -->
 <div id="mainContent" class="hidden w-full flex flex-col items-center justify-start">
 
-<!-- Timer header -->
-<div class="w-full bg-green-600 text-white py-2 text-center text-sm" id="unlockTimer">
-  🔓 Unlocked — বাকি সময়: --
+<!-- Timer header with logout -->
+<div class="w-full bg-green-600 text-white py-2 text-sm flex justify-between items-center px-4" id="unlockTimer">
+  <span>🔓 Unlocked — বাকি সময়: --</span>
+  <button onclick="lockNow()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs">Logout</button>
 </div>
 
 <header class="w-full bg-cyan-500 text-white py-4 shadow-md text-center rounded-b-lg">
@@ -113,7 +114,17 @@ function unlockPage(){
   }
 }
 
-// Page load এ চেক হবে আগে unlock করা হয়েছিল কিনা এবং সময় শেষ হয়েছে কিনা
+// Manual lock (Logout button)
+function lockNow(){
+  clearInterval(countdownInterval);
+  localStorage.removeItem("unlocked");
+  localStorage.removeItem("expiryTime");
+  document.getElementById("mainContent").classList.add("hidden");
+  document.getElementById("lockScreen").classList.remove("hidden");
+  document.getElementById("pinInput").value = "";
+}
+
+// Page load check
 window.onload = function(){
   const unlocked = localStorage.getItem("unlocked");
   const expiry = localStorage.getItem("expiryTime");
@@ -131,7 +142,7 @@ window.onload = function(){
 // Countdown timer
 function startCountdown(expiryTime){
   clearInterval(countdownInterval);
-  const timerDisplay = document.getElementById("unlockTimer");
+  const timerDisplay = document.getElementById("unlockTimer").querySelector("span");
 
   countdownInterval = setInterval(()=>{
     const now = Date.now();
@@ -139,12 +150,7 @@ function startCountdown(expiryTime){
 
     if(remaining <= 0){
       clearInterval(countdownInterval);
-      localStorage.removeItem("unlocked");
-      localStorage.removeItem("expiryTime");
-      document.getElementById("mainContent").classList.add("hidden");
-      document.getElementById("lockScreen").classList.remove("hidden");
-      document.getElementById("pinInput").value = "";
-      timerDisplay.textContent = "🔒 Locked — Please enter PIN again";
+      lockNow();
       return;
     }
 
