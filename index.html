@@ -6,7 +6,6 @@
 <title>Super Ace Predication V2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-/* Pulse scale for all lines */
 @keyframes pulseScale {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
@@ -33,6 +32,11 @@
 
 <!-- Hidden Content -->
 <div id="mainContent" class="hidden w-full flex flex-col items-center justify-start">
+
+<!-- Timer header -->
+<div class="w-full bg-green-600 text-white py-2 text-center text-sm" id="unlockTimer">
+  🔓 Unlocked — বাকি সময়: --
+</div>
 
 <header class="w-full bg-cyan-500 text-white py-4 shadow-md text-center rounded-b-lg">
   <h1 class="text-3xl font-bold">Super Ace Predication V2</h1>
@@ -80,26 +84,74 @@
 </div>
 
 <script>
-// Unlock function
+let countdownInterval;
+
+// Unlock function with expiry
 function unlockPage(){
   const pin = document.getElementById("pinInput").value;
   const errorMsg = document.getElementById("errorMsg");
+  let duration = 0;
 
-  if(pin === "1234"){ // এখানে আপনার পছন্দের PIN দিন
-    localStorage.setItem("unlocked", "true"); // PIN save
+  if(pin === "5673"){ // 10 min
+    duration = 10 * 60 * 1000;
+  } else if(pin === "3421"){ // 30 min
+    duration = 30 * 60 * 1000;
+  } else if(pin === "5678"){ // 1 hour
+    duration = 60 * 60 * 1000;
+  }
+
+  if(duration > 0){
+    const expiryTime = Date.now() + duration;
+    localStorage.setItem("unlocked", "true");
+    localStorage.setItem("expiryTime", expiryTime);
+
     document.getElementById("lockScreen").classList.add("hidden");
     document.getElementById("mainContent").classList.remove("hidden");
+    startCountdown(expiryTime);
   } else {
     errorMsg.classList.remove("hidden");
   }
 }
 
-// Page load এ চেক হবে আগে unlock করা হয়েছিল কিনা
+// Page load এ চেক হবে আগে unlock করা হয়েছিল কিনা এবং সময় শেষ হয়েছে কিনা
 window.onload = function(){
-  if(localStorage.getItem("unlocked") === "true"){
+  const unlocked = localStorage.getItem("unlocked");
+  const expiry = localStorage.getItem("expiryTime");
+
+  if(unlocked === "true" && expiry && Date.now() < expiry){
     document.getElementById("lockScreen").classList.add("hidden");
     document.getElementById("mainContent").classList.remove("hidden");
+    startCountdown(expiry);
+  } else {
+    localStorage.removeItem("unlocked");
+    localStorage.removeItem("expiryTime");
   }
+}
+
+// Countdown timer
+function startCountdown(expiryTime){
+  clearInterval(countdownInterval);
+  const timerDisplay = document.getElementById("unlockTimer");
+
+  countdownInterval = setInterval(()=>{
+    const now = Date.now();
+    const remaining = expiryTime - now;
+
+    if(remaining <= 0){
+      clearInterval(countdownInterval);
+      localStorage.removeItem("unlocked");
+      localStorage.removeItem("expiryTime");
+      document.getElementById("mainContent").classList.add("hidden");
+      document.getElementById("lockScreen").classList.remove("hidden");
+      document.getElementById("pinInput").value = "";
+      timerDisplay.textContent = "🔒 Locked — Please enter PIN again";
+      return;
+    }
+
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    timerDisplay.textContent = `🔓 Unlocked — বাকি সময়: ${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  }, 1000);
 }
 
 // Status lines
